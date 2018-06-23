@@ -62,15 +62,26 @@
 
         function onMessage(evt) {
             let message = parseMessage(evt.data);
-            console.log('INCOMING')
-            console.log(message)
 
             if (message.code == REQUEST_CODES.MESSAGE_SEND) {
-                writeToScreen(message.from + ": " + message.message + '\n');
             }
             if (parseInt(message['code']) === RESPONSE_CODES.HELLO_OK_1) {
-                doSend(createMessage(RESPONSE_CODES.HELLO_OK_2, document.myform.userName.value.length ,document.myform.userName.value));
-                connectionEstablished = true;
+            }
+
+            switch (message.code) {
+                case REQUEST_CODES.MESSAGE_SEND: {
+                    writeToScreen(message.from + ": " + message.message + '\n');
+                    break;
+                }
+                case RESPONSE_CODES.PRESENCE_RESPONSE: {
+                    document.myform.status.value = message.message;
+                    break;
+                }
+                case RESPONSE_CODES.HELLO_OK_1: {
+                    doSend(createMessage(RESPONSE_CODES.HELLO_OK_2, document.myform.userName.value.length ,document.myform.userName.value));
+                    connectionEstablished = true;
+                    break;
+                }
             }
         }
 
@@ -84,10 +95,6 @@
             let to = messageContent.substring(messageContent.indexOf(":")+1).trim();
             to = to.substring(0, to.indexOf(":"))
             let message = messageContent.substring(messageContent.lastIndexOf(":")+1, messageContent.length)
-
-            console.log(from);
-            console.log(to);
-            console.log(message);
 
             return {
                 'code': code,
@@ -135,7 +142,6 @@
 
         function createMessage(code, length, content) {
             let message = code + " " + length + " " + content;
-            console.log("SENT: " + message);
             return (message);
         }
 
@@ -182,12 +188,18 @@
                     </div>
                     <p><input type="button" class="btn btn-primary" name=sendButton value="Send" onClick="sendMessage();"></p>
                 </div>
-                <div class="col-6">
+                <div class="col-3">
                     <div class="form-group">
                         <label for="recipient">Recipient:</label>
                         <input type="text" class="form-control" name="recipient" value="USER_NO_2" id="recipient">
                     </div>
                     <p><input type="button" class="btn btn-primary" name=checkButton value="Check user" onClick="checkIfUserConnected();"></p>
+                </div>
+                <div class="col-3">
+                    <div class="form-group">
+                        <label for="status">Status:</label>
+                        <input type="text" disabled="true" class="form-control" name="status" id="status" value="unknown">
+                    </div>
                 </div>
             </div>
             <div class="form-group">

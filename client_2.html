@@ -32,7 +32,7 @@
         };
 
         function init() {
-            document.myform.port.value = 64215;
+            document.myform.port.value = 64214;
             document.myform.inputtext.value = '';
             document.myform.disconnectButton.disabled = true;
             document.myform.checkButton.disabled = true;
@@ -64,11 +64,24 @@
             let message = parseMessage(evt.data);
 
             if (message.code == REQUEST_CODES.MESSAGE_SEND) {
-                writeToScreen(message.from + ": " + message.message + '\n');
             }
             if (parseInt(message['code']) === RESPONSE_CODES.HELLO_OK_1) {
-                doSend(createMessage(RESPONSE_CODES.HELLO_OK_2, document.myform.userName.value.length ,document.myform.userName.value));
-                connectionEstablished = true;
+            }
+
+            switch (message.code) {
+                case REQUEST_CODES.MESSAGE_SEND: {
+                    writeToScreen(message.from + ": " + message.message + '\n');
+                    break;
+                }
+                case RESPONSE_CODES.PRESENCE_RESPONSE: {
+                    document.myform.status.value = message.message;
+                    break;
+                }
+                case RESPONSE_CODES.HELLO_OK_1: {
+                    doSend(createMessage(RESPONSE_CODES.HELLO_OK_2, document.myform.userName.value.length ,document.myform.userName.value));
+                    connectionEstablished = true;
+                    break;
+                }
             }
         }
 
@@ -175,17 +188,23 @@
                 </div>
                 <p><input type="button" class="btn btn-primary" name=sendButton value="Send" onClick="sendMessage();"></p>
             </div>
-            <div class="col-6">
+            <div class="col-3">
                 <div class="form-group">
                     <label for="recipient">Recipient:</label>
                     <input type="text" class="form-control" name="recipient" value="USER_NO_1" id="recipient">
                 </div>
                 <p><input type="button" class="btn btn-primary" name=checkButton value="Check user" onClick="checkIfUserConnected();"></p>
             </div>
+            <div class="col-3">
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <input type="text" disabled="true" class="form-control" name="status" id="status" value="unknown">
+                </div>
+            </div>
         </div>
         <div class="form-group">
             <label for="message">Specify port number:</label>
-            <input type="text" class="form-control" name="port" id="port" value="64214">
+            <input type="text" class="form-control" name="port" id="port" value="64215">
         </div>
     </form>
 </div>
