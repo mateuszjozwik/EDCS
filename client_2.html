@@ -61,9 +61,11 @@
         }
 
         function onMessage(evt) {
-            console.log('INCOMING: '+ evt.data);
-            writeToScreen("response: " + evt.data + '\n');
             let message = parseMessage(evt.data);
+
+            if (message.code == REQUEST_CODES.MESSAGE_SEND) {
+                writeToScreen(message.from + ": " + message.message + '\n');
+            }
             if (parseInt(message['code']) === RESPONSE_CODES.HELLO_OK_1) {
                 doSend(createMessage(RESPONSE_CODES.HELLO_OK_2, document.myform.userName.value.length ,document.myform.userName.value));
                 connectionEstablished = true;
@@ -76,11 +78,18 @@
             let messageLength = parseInt(trimmedData);
             trimmedData = data.substring(data.indexOf(" "), data.length).trim();
             let messageContent = trimmedData.substring(trimmedData.indexOf(" "), trimmedData.length).trim();
+            let from = messageContent.substring(0, messageContent.indexOf(":"));
+            let to = messageContent.substring(messageContent.indexOf(":")+1).trim();
+            to = to.substring(0, to.indexOf(":"))
+            let message = messageContent.substring(messageContent.lastIndexOf(":")+1, messageContent.length)
 
             return {
                 'code': code,
                 'messageLength': messageLength,
-                'messageContent': messageContent
+                'messageContent': messageContent,
+                'from': from,
+                'to': to,
+                'message': message
             }
         }
 
@@ -95,7 +104,7 @@
             let parsedMessage = parseMessage(message);
 
             if (parseInt(parsedMessage['code']) === REQUEST_CODES.MESSAGE_SEND) {
-                writeToScreen(document.myform.userName.value + ": " + parsedMessage['messageContent'] + '\n');
+                writeToScreen(parsedMessage.from + ": " + parsedMessage.message + '\n');
             }
             websocket.send(message);
         }
@@ -120,7 +129,6 @@
 
         function createMessage(code, length, content) {
             let message = code + " " + length + " " + content;
-            console.log("SENT: " + message);
             return (message);
         }
 
@@ -175,7 +183,10 @@
                 <p><input type="button" class="btn btn-primary" name=checkButton value="Check user" onClick="checkIfUserConnected();"></p>
             </div>
         </div>
-        <p><input hidden="true" type="text" name="port"/></p>
+        <div class="form-group">
+            <label for="message">Specify port number:</label>
+            <input type="text" class="form-control" name="port" id="port" value="64214">
+        </div>
     </form>
 </div>
 </body>
