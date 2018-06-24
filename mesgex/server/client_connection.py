@@ -62,9 +62,12 @@ class ClientConnection(Connection):
                 self.send_msg(ResponseCodes.ERROR, 'Received HELLO_OK_1 from client.')
                 self.close()
             elif code == ResponseCodes.HELLO_OK_2:
-                print('SCC: Established connection with client named: {}'.format(self.name))
-                self.state = State.CONNECTED
-                self.server.client_connected(self.name, self)
+                if self.server.check_availability(self.name):
+                    print('SCC: Established connection with client named: {}'.format(self.name))
+                    self.state = State.CONNECTED
+                    self.server.client_connected(self.name, self)
+                else:
+                    self.reject()
             else:
                 self.reject()
         elif self.state == State.CONNECTED:

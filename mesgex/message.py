@@ -1,5 +1,6 @@
 from mesgex.constants import Codes, DefaultMessage, RequestCodes, ResponseCodes, PresenceStatus
 from typing import Union
+import hashlib
 
 
 def create_msg(code: int, message: Union[str, bytes] = None) -> bytes:
@@ -54,7 +55,7 @@ def format_message_msg(sender, recipient, msg, code):
     if code == RequestCodes.MESSAGE_SEND:
         return b'%s:%s:%s' % (sender, recipient, msg)
     elif code in (ResponseCodes.MESSAGE_DELIVERED, ResponseCodes.MESSAGE_FAILED):
-        return b'%s:%s:%d' % (sender, recipient, hash(msg))
+        return b'%s:%s:%s' % (sender, recipient, hashlib.md5(msg).hexdigest().encode('utf-8'))
 
 
 def decipher_message_msg(buffer: bytes) -> (bytes, bytes, bytes):

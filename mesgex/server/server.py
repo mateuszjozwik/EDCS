@@ -4,7 +4,8 @@ from typing import Dict
 
 from mesgex.connection import Connection
 from mesgex.constants import RequestCodes, ResponseCodes, PresenceStatus
-from mesgex.message import decipher_message_msg, format_route_msg, decipher_route_msg, format_presence_response_msg
+from mesgex.message import decipher_message_msg, format_route_msg, decipher_route_msg, format_presence_response_msg, \
+    format_message_msg
 from mesgex.server.server_connection import ServerConnection
 from mesgex.server.client_connection import ClientConnection
 from uuid import uuid4
@@ -197,23 +198,39 @@ class Server:
                     break
 
     def check_availability(self, name):
-        # TODO implement checking name availability
         if name \
                 and b':' not in name \
-                and b';' not in name:
+                and b';' not in name \
+                and name not in self.client_routing:
             return True
         else:
             return False
 
-    def received_message(self, buffer: bytes):
+    def received_message(self, buffer: bytes, connection: Connection):
         """Forward message to client or server."""
         sender, recipient, message = decipher_message_msg(buffer)
-        self.get_connection_for_client(recipient).send_msg(RequestCodes.MESSAGE_SEND, buffer)
+        try:
+            self.get_connection_for_client(recipient).send_msg(RequestCodes.MESSAGE_SEND, buffer)
+        except RouteNotFoundException:
+            print('S: Route to {} not found.'.format(recipient.decode('utf-8')))
+            connection.send_msg(ResponseCodes.MESSAGE_FAILED,
+                                format_message_msg(sender, recipient, message, ResponseCodes.MESSAGE_FAILED))
 
     def message_delivered(self, buffer: bytes):
-        sender, recipient, message = decipher_message_msg(buffer)
-        print('S: Message to {} delivered.'.format(recipient.decode('utf-8')))
-        self.get_connection_for_client(sender).send_msg(ResponseCodes.MESSAGE_DELIVERED, buffer)
+        sender, recipient, message_hash = decipher_message_msg(buffer)
+        print('S: Message to {} delivered. Hash: {}'.format(recipient.decode('utf-8'), message_hash.decode('utf-8')))
+        try:
+            self.get_connection_for_client(sender).send_msg(ResponseCodes.MESSAGE_DELIVERED, buffer)
+        except RouteNotFoundException:
+            print('S: No one to deliver message delivered message.')
+
+    def message_failed(self, buffer: bytes):
+        sender, recipient, message_hash = decipher_message_msg(buffer)
+        print('S: Message to {} failed. Hash: {}'.format(recipient.decode('utf-8'), message_hash.decode('utf-8')))
+        try:
+            self.get_connection_for_client(sender).send_msg(ResponseCodes.MESSAGE_DELIVERED, buffer)
+        except RouteNotFoundException:
+            print('S: No one to deliver message delivered message.')
 
     def get_connection_for_client(self, client: bytes) -> Connection:
         if client in self.client_connections:

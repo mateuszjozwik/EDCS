@@ -173,6 +173,8 @@ def three_clients_two_servers():
     c2.connect('James')
 
     sleep(0.1)
+    c1.send_message_to('Jones', 'A little love note to Jones from George.')
+    sleep(0.1)
 
     c3 = Client(server_addr=('localhost', port+3))
     c3.connect('Jones')

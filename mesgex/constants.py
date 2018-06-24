@@ -1,5 +1,5 @@
 """
-    mesgex protocol description
+mesgex protocol description
 
 All communications consist of:
 "<code> <length of message> <message>"
@@ -47,8 +47,8 @@ Send a packet in the format
 <MESSAGE_SEND> <LENGTH> <SENDER NAME>:<RECIPIENT NAME>:<MY MESSAGE>
 
 Message reply:
-<MESSAGE_DELIVERED> <LENGTH> <SENDER NAME>:<RECIPIENT NAME>:<MY MESSAGE HASH>
-<MESSAGE_FAILED> <LENGTH> <SENDER NAME>:<RECIPIENT NAME>:<MY MESSAGE HASH>
+<MESSAGE_DELIVERED> <LENGTH> <SENDER NAME>:<RECIPIENT NAME>:<MY MESSAGE MD5 HASH IN HEX>
+<MESSAGE_FAILED> <LENGTH> <SENDER NAME>:<RECIPIENT NAME>:<MY MESSAGE MD5 HASH IN HEX>
 
 Presence checking:
 <PRESENCE CHECK> <LENGTH> <CLIENT NAME>
@@ -73,10 +73,13 @@ class ResponseCodes:
     HELLO_OK_1 = 200
     HELLO_OK_2 = 201
     MESSAGE_DELIVERED = 260
+
     ERROR = 500
     REJECT = 503
     MESSAGE_FAILED = 505
+
     PONG = 889
+
     PRESENCE_RESPONSE = 951
 
 

@@ -18,8 +18,6 @@ class State:
 
 
 class Connection:
-    # TODO add checking of connection status through PINGs
-
     recv_size = 1024
 
     def __init__(self, conn: socket = None):
@@ -100,9 +98,11 @@ class Connection:
                 self.receive_pong(message)
             elif self.state == State.CONNECTED:
                 if code == RequestCodes.MESSAGE_SEND:
-                    self.parent.received_message(message)
+                    self.parent.received_message(message, self)
                 elif code == ResponseCodes.MESSAGE_DELIVERED:
                     self.parent.message_delivered(message)
+                elif code == ResponseCodes.MESSAGE_FAILED:
+                    self.parent.message_failed(message)
 
         return code, message
 

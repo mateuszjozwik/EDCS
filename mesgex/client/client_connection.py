@@ -49,6 +49,6 @@ class ClientConnection(Connection):
     def send_message_delivered_to(self, sender: bytes, message: bytes):
         assert isinstance(sender, bytes), 'sender must be of type bytes'
         assert isinstance(message, bytes), 'message must be of type bytes'
-        self.send_msg(ResponseCodes.MESSAGE_DELIVERED, format_message_msg(self.name, sender, message,
+        self.send_msg(ResponseCodes.MESSAGE_DELIVERED, format_message_msg(sender, self.name, message,
                                                                           ResponseCodes.MESSAGE_DELIVERED))
 
