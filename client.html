@@ -11,6 +11,7 @@
     <script language="javascript" type="text/javascript">
 
         let connectionEstablished = false;
+        let messages = [];
 
         let REQUEST_CODES = {
             'MESSAGE_SEND': 250,
@@ -51,26 +52,25 @@
             document.myform.connectButton.disabled = true;
             document.myform.checkButton.disabled = false;
             document.myform.disconnectButton.disabled = false;
+            document.myform.sendButton.disabled = false;
+
             doSend(createMessage(REQUEST_CODES.HELLO, document.myform.userName.value.length ,document.myform.userName.value))
         }
 
         function onClose(evt) {
             writeToScreen("---Connection with server lost---\n");
             document.myform.connectButton.disabled = false;
+            document.myform.checkButton.disabled = true;
             document.myform.disconnectButton.disabled = true;
+            document.myform.sendButton.disabled = true;
         }
 
         function onMessage(evt) {
             let message = parseMessage(evt.data);
 
-            if (message.code == REQUEST_CODES.MESSAGE_SEND) {
-            }
-            if (parseInt(message['code']) === RESPONSE_CODES.HELLO_OK_1) {
-            }
-
             switch (message.code) {
                 case REQUEST_CODES.MESSAGE_SEND: {
-                    writeToScreen(message.from + ": " + message.message + '\n');
+                    sendAck(message, evt.data);
                     break;
                 }
                 case RESPONSE_CODES.PRESENCE_RESPONSE: {
@@ -82,11 +82,20 @@
                     connectionEstablished = true;
                     break;
                 }
+                case RESPONSE_CODES.MESSAGE_DELIVERED: {
+                    updateMessageStatus(message);
+                    break;
+                }
             }
         }
 
         function parseMessage(data) {
             let code = parseInt(data)
+            let timestamp = new Date().getTime();
+            if (code == REQUEST_CODES.MESSAGE_SEND || code == RESPONSE_CODES.MESSAGE_DELIVERED) {
+                let timestamp = data.substring(data.length-13);
+            }
+
             let trimmedData = data.substring(data.indexOf(" "), data.length);
             let messageLength = parseInt(trimmedData);
             trimmedData = data.substring(data.indexOf(" "), data.length).trim();
@@ -102,7 +111,26 @@
                 'messageContent': messageContent,
                 'from': from,
                 'to': to,
-                'message': message
+                'message': message,
+                'timestamp': timestamp,
+            }
+        }
+
+        function updateMessageStatus(receivedMessage) {
+            let recivedTimeStamp = receivedMessage.messageContent.substring(receivedMessage.messageContent.length-13);
+            messages.forEach(function (message, index) {
+                console.log("index: " + index);
+                if (message.timestamp == recivedTimeStamp) {
+                    console.log('MATCH');
+                    messages[index].received = true;
+                }
+            });
+            reloadScreen();
+        }
+
+        function sendAck(parsedMessage, evtData) {
+            if (parsedMessage.code == REQUEST_CODES.MESSAGE_SEND) {
+                doSend(createMessage(RESPONSE_CODES.MESSAGE_DELIVERED, parsedMessage.messageContent.length, parsedMessage.messageContent));
             }
         }
 
@@ -116,15 +144,36 @@
         function doSend(message) {
             let parsedMessage = parseMessage(message);
 
+            if (parsedMessage.code == REQUEST_CODES.MESSAGE_SEND || parsedMessage.code == RESPONSE_CODES.MESSAGE_DELIVERED) {
+                messages.push(parsedMessage);
+                reloadScreen();
+            }
+
             if (parseInt(parsedMessage['code']) === REQUEST_CODES.MESSAGE_SEND) {
-                writeToScreen(parsedMessage.from + ": " + parsedMessage.message + '\n');
+                reloadScreen();
             }
             websocket.send(message);
         }
 
-        function writeToScreen(message) {
-            document.myform.outputtext.value += message
+        function reloadScreen() {
+            document.myform.outputtext.value = "";
+
+            messages.forEach(function (message) {
+                document.myform.outputtext.value += (message.from+ ": " + message.message.substring(0, message.message.length-13));
+                if (message.received) {
+                    document.myform.outputtext.value += " [DELIVERED]";
+                }
+                document.myform.outputtext.value += '\n';
+            });
+            document.myform.outputtext.value += '\n';
             document.myform.outputtext.scrollTop = document.myform.outputtext.scrollHeight;
+
+        }
+
+        function writeToScreen(message) {
+
+
+
         }
 
         window.addEventListener("load", init, false);
@@ -132,7 +181,9 @@
 
         function sendMessage() {
             let messageContent = document.myform.inputtext.value;
-            messageContent = document.myform.userName.value + ':' + document.myform.recipient.value + ':' + messageContent;
+            let timestamp = new Date().getTime();
+
+            messageContent = document.myform.userName.value + ':' + document.myform.recipient.value + ':' + messageContent + timestamp;
             let messageLength = messageContent.length;
 
             if (connectionEstablished) {
@@ -162,51 +213,51 @@
 </head>
 
 <body>
-    <div class="container mt-5">
-        <form name="myform">
-            <div class="alert alert-info">
-                <strong>CHAT APPLICATION!</strong>
-            </div>
-            <div class="form-group">
-                <label for="userName">Choose your name:</label>
-                <input type="text" class="form-control" name="userName" value="USER_NO_1" id="userName">
-            </div>
+<div class="container mt-5">
+    <form name="myform">
+        <div class="alert alert-info">
+            <strong>CHAT APPLICATION!</strong>
+        </div>
+        <div class="form-group">
+            <label for="userName">Choose your name:</label>
+            <input type="text" class="form-control" name="userName" value="USER_NO_1" id="userName">
+        </div>
 
-            <div class="my-3">
-                <input type="button" class="btn btn-primary" name=disconnectButton value="Disconnect" onClick="doDisconnect();">
-                <input type="button" class="btn btn-primary" name=connectButton value="Connect" onClick="doConnect();">
-            </div>
+        <div class="my-3">
+            <input type="button" class="btn btn-primary" name=disconnectButton value="Disconnect" onClick="doDisconnect();">
+            <input type="button" class="btn btn-primary" name=connectButton value="Connect" onClick="doConnect();">
+        </div>
 
 
-            <p><textarea name="outputtext" rows="20" cols="120"></textarea></p>
+        <p><textarea name="outputtext" rows="20" cols="120"></textarea></p>
 
-            <div class="row">
-                <div class="col-6">
-                    <div class="form-group">
-                        <label for="message">Type your message:</label>
-                        <input type="text" class="form-control" name="inputtext" id="message">
-                    </div>
-                    <p><input type="button" class="btn btn-primary" name=sendButton value="Send" onClick="sendMessage();"></p>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label for="message">Type your message:</label>
+                    <input type="text" class="form-control" name="inputtext" id="message">
                 </div>
-                <div class="col-3">
-                    <div class="form-group">
-                        <label for="recipient">Recipient:</label>
-                        <input type="text" class="form-control" name="recipient" value="USER_NO_2" id="recipient">
-                    </div>
-                    <p><input type="button" class="btn btn-primary" name=checkButton value="Check user" onClick="checkIfUserConnected();"></p>
+                <p><input type="button" class="btn btn-primary" disabled="true" name=sendButton value="Send" onClick="sendMessage();"></p>
+            </div>
+            <div class="col-3">
+                <div class="form-group">
+                    <label for="recipient">Recipient:</label>
+                    <input type="text" class="form-control" name="recipient" value="USER_NO_2" id="recipient">
                 </div>
-                <div class="col-3">
-                    <div class="form-group">
-                        <label for="status">Status:</label>
-                        <input type="text" disabled="true" class="form-control" name="status" id="status" value="unknown">
-                    </div>
+                <p><input type="button" class="btn btn-primary" name=checkButton value="Check user" onClick="checkIfUserConnected();"></p>
+            </div>
+            <div class="col-3">
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <input type="text" disabled="true" class="form-control" name="status" id="status" value="unknown">
                 </div>
             </div>
-            <div class="form-group">
-                <label for="message">Specify port number:</label>
-                <input type="text" class="form-control" name="port" id="port" value="64214">
-            </div>
-        </form>
-    </div>
+        </div>
+        <div class="form-group">
+            <label for="message">Specify port number:</label>
+            <input type="text" class="form-control" name="port" id="port" value="64214">
+        </div>
+    </form>
+</div>
 </body>
 </html>
