@@ -86,6 +86,9 @@
                     updateMessageStatus(message);
                     break;
                 }
+                case RESPONSE_CODES.MESSAGE_FAILED: {
+                    onFailedMessage();
+                }
             }
         }
 
@@ -114,6 +117,25 @@
                 'message': message,
                 'timestamp': timestamp,
             }
+        }
+
+        function onFailedMessage() {
+            let timeStamp = new Date().getTime();
+            let message = 'MESSAGE COULD NOT BE DELIVERED';
+            let messageContent = message + timeStamp;
+
+            message = {
+                'code': RESPONSE_CODES.MESSAGE_FAILED,
+                'messageLength': messageContent.length,
+                'messageContent': messageContent,
+                'from': document.myform.recipient.value,
+                'to': 'unknown',
+                'message': 'MESSAGE COULD NOT BE DELIVERED',
+                'timestamp': timeStamp,
+            };
+
+            messages.push(message);
+            reloadScreen();
         }
 
         function updateMessageStatus(receivedMessage) {
@@ -159,15 +181,37 @@
             document.myform.outputtext.value = "";
 
             messages.forEach(function (message) {
-                document.myform.outputtext.value += (message.from+ ": " + message.message.substring(0, message.message.length-13));
-                if (message.received) {
-                    document.myform.outputtext.value += " [DELIVERED]";
+
+                switch (message.code) {
+                    case RESPONSE_CODES.MESSAGE_FAILED: {
+                        document.myform.outputtext.value += " [FAILED]";
+                        document.myform.outputtext.value += '\n';
+
+                        break;
+                    }
+                    case RESPONSE_CODES.MESSAGE_DELIVERED: {
+                        document.myform.outputtext.value += (message.from+ ": " + message.message.substring(0, message.message.length-13));
+                        document.myform.outputtext.value += '\n';
+
+                        break;
+                    }
+                    case REQUEST_CODES.MESSAGE_SEND: {
+                        document.myform.outputtext.value += (message.from+ ": " + message.message.substring(0, message.message.length-13));
+                        if (message.received) {
+                            document.myform.outputtext.value += " [DELIVERED]";
+                            document.myform.outputtext.value += '\n';
+                        }
+
+                        break;
+                    }
                 }
-                document.myform.outputtext.value += '\n';
+
+                if (message.code != RESPONSE_CODES.MESSAGE_FAILED) {
+                    console.log(message.code);
+                }
             });
             document.myform.outputtext.value += '\n';
             document.myform.outputtext.scrollTop = document.myform.outputtext.scrollHeight;
-
         }
 
         function writeToScreen(message) {
@@ -220,7 +264,7 @@
         </div>
         <div class="form-group">
             <label for="userName">Choose your name:</label>
-            <input type="text" class="form-control" name="userName" value="USER_NO_2" id="userName">
+            <input type="text" class="form-control" name="userName" value="USER_NO_1" id="userName">
         </div>
 
         <div class="my-3">
@@ -242,7 +286,7 @@
             <div class="col-3">
                 <div class="form-group">
                     <label for="recipient">Recipient:</label>
-                    <input type="text" class="form-control" name="recipient" value="USER_NO_1" id="recipient">
+                    <input type="text" class="form-control" name="recipient" value="USER_NO_2" id="recipient">
                 </div>
                 <p><input type="button" class="btn btn-primary" name=checkButton value="Check user" onClick="checkIfUserConnected();"></p>
             </div>
