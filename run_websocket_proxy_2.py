@@ -7,7 +7,6 @@ from mesgex.websocket import MesgexWebSocket
 class WS1(MesgexWebSocket):
     mesgex_server_addr = ('localhost', 60009)
 
-
 if __name__ == '__main__':
     """
 // To connect through JS (assuming port = 60266) use this:
@@ -28,10 +27,7 @@ setTimeout(function(){ ws2.send('250 51 James:George:Test message for George of 
     """
 
     port = random.randint(10000, 65000)
-
-    server1 = SimpleWebSocketServer('', 64214, WS1)
-
-    print('Running server1 on port {}.'.format(64214))
-
-    server1.serveforever()
+    server2 = SimpleWebSocketServer('', 64215, WS1)
+    print('Running server2 on port {}.'.format(64215))
+    server2.serveforever()
 
